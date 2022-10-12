@@ -7,7 +7,7 @@ return {
 
     server = {
         setting = {
-            hud = 0,
+            hud = 64,
             hudScale = 1
         }
     }
