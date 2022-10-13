@@ -1,9 +1,14 @@
 bh.Bar = dofile("sys/lua/sea-framework/app/better-hud/class/Bar.lua")
+bh.InventorySlot = dofile("sys/lua/sea-framework/app/better-hud/class/InventorySlot.lua")
 
 -- Events
 
 sea.addEvent("onHookJoin", function(player)
     local ui = player.ui
+
+    player.hud = {
+        inventory = {}
+    }
 
     -- Health
     player.healthIcon = ui:createPanel("<spritesheet:gfx/hud_symbols.bmp:64:64:b>", 20, 444, sea.Style.new({
@@ -69,14 +74,17 @@ sea.addEvent("onHookDie", function(player)
     -- hide hud
 end)
 
-sea.addEvent("onHookCollect", function(player)
+sea.addEvent("onHookCollect", function(player, item, itemType)
     player:updateArmor()
+    player:addInventorySlot(itemType)
 end)
 
 sea.addEvent("onHookBuy", function(player, itemType)
     if itemType:isArmor() then
         player:updateArmor(itemType:toArmor())
     end
+
+    player:addInventorySlot(itemType)
 end)
 
 sea.addEvent("onHookAttack", function(player)
@@ -114,6 +122,12 @@ function bh.getHealthBarColor(ratio)
     end
 end
 
+function sea.Player:addInventorySlot(itemType)
+    local slot = itemType.slot
+
+    self.hud.inventory[slot][itemType.id] = bh.InventorySlot.new(self.ui, itemType.imagePath, 70, 444)
+end
+
 function sea.Player:updateHealth(health, maxHealth)
     health = health or self.health
     maxHealth = maxHealth or self.maxHealth
@@ -145,13 +159,17 @@ function sea.Player:updateArmor(armor, maxArmor)
     armor = armor or self.armor
     maxArmor = maxArmor or 100
 
+    local ratio
+
     if armor > 200 then
         armor = sea.ItemType.armorToItem(armor).name
+        
+        ratio = armor / maxArmor
     else
-        local ratio = armor / maxArmor
-
-        self.armorBar:setRatio(ratio)
+        ratio = 1
     end
+
+    self.armorBar:setRatio(ratio)
 
     self.armorText:setText(tostring(armor):upper())
 end
