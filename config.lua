@@ -1,7 +1,13 @@
+bh.config = {}
+
 return {
+    color = {
+        ["armor"] = sea.Color.new(90, 90, 220)
+    },
+
     player = {
         variable = {
-            healthBar = {nil}
+            hud = {{}}
         }
     },
 
