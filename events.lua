@@ -39,17 +39,18 @@ sea.addEvent("onHookJoin", function(player)
     player.armorBar = bh.Bar.new(ui, 10, 458, armorColor, {x = 2, y = 0.25})
 
     -- Ammo
-    player.ammoText = ui:createText("0", 790, 462, sea.Style.new({
+    player.ammoText = ui:createText("0", 810, 462, sea.Style.new({
         align = 2,
         verticalAlign = 1,
         textSize = 26
     }))
-    player.ammoSpareText = ui:createText("/ 0", 800, 466, sea.Style.new({
+    player.ammoSpareText = ui:createText("/ 0", 840, 466, sea.Style.new({
+        align = 2,
         verticalAlign = 1
     }))
 
     -- Current Weapon
-    player.currentWeaponText = ui:createText("None", 830, 442, sea.Style.new({
+    player.currentWeaponText = ui:createText("None", 840, 436, sea.Style.new({
         align = 2,
         verticalAlign = 1,
         textSize = 10
@@ -63,6 +64,16 @@ sea.addEvent("onHookSpawn", function(player)
     player:updateArmor()
 
     local function updateCurrentWeapon()
+        for _, slot in pairs(player:getAllInventorySlots()) do
+            slot:destroy()
+        end
+
+        player.hud.inventory = {}
+
+        for _, itemType in pairs(player:getItems()) do
+            player:addInventorySlot(itemType)
+        end
+
         player:updateAmmo()
         player:updateCurrentWeapon()
     end
@@ -79,12 +90,40 @@ sea.addEvent("onHookCollect", function(player, item, itemType)
     player:addInventorySlot(itemType)
 end)
 
-sea.addEvent("onHookBuy", function(player, itemType)
-    if itemType:isArmor() then
-        player:updateArmor(itemType:toArmor())
+sea.addEvent("onHookDrop", function(player, item, itemType)
+    if itemType.id == 50 then
+        return
     end
 
-    player:addInventorySlot(itemType)
+    local function update()
+        player:removeInventorySlot(itemType)
+        player:updateAmmo()
+        player:updateCurrentWeapon()
+    end
+
+    timerEx(1, update)
+end)
+
+sea.addEvent("onHookBuy", function(player, itemType)
+    local money = player.money
+
+    function update(player)
+        if money == player.money then
+            -- Buy wasn't processed
+            return
+        end
+
+        if itemType:isArmor() then
+            player:updateArmor(itemType:toArmor())
+        end
+
+        player:addInventorySlot(itemType)
+
+        player:updateAmmo()
+        player:updateCurrentWeapon()
+    end
+
+    timerEx(1, "update", 1, player)
 end)
 
 sea.addEvent("onHookAttack", function(player)
@@ -122,10 +161,73 @@ function bh.getHealthBarColor(ratio)
     end
 end
 
+-- Extensions
+
 function sea.Player:addInventorySlot(itemType)
     local slot = itemType.slot
 
-    self.hud.inventory[slot][itemType.id] = bh.InventorySlot.new(self.ui, itemType.imagePath, 70, 444)
+    if itemType.slot == 0 then
+        return
+    end
+
+    if not self.hud.inventory[slot] then
+        self.hud.inventory[slot] = {}
+
+        self.hud.inventory[slot][-1] = self.ui:createText(slot, 846, 0, sea.Style.new({
+            align = 1,
+            verticalAlign = 1,
+            textSize = 10
+        }))
+    end
+
+    self.hud.inventory[slot][itemType.id] = bh.InventorySlot.new(self.ui, itemType:getImagePath("kill"), 0, 0)
+
+    self:updateInventory()
+end
+
+function sea.Player:removeInventorySlot(itemType)
+    local slot = itemType.slot
+
+    if itemType.slot == 0 then
+        return
+    end
+
+    if not self.hud.inventory[slot] then
+        return
+    end
+
+    if not self.hud.inventory[slot][itemType.id] then
+        return
+    end
+
+    self.hud.inventory[slot][itemType.id]:destroy()
+    self.hud.inventory[slot][itemType.id] = nil
+
+    if table.count(self.hud.inventory[slot]) <= 1 then
+        self.hud.inventory[slot][-1]:destroy()
+        self.hud.inventory[slot] = nil
+    end
+
+    self:updateInventory()
+end
+
+function sea.Player:updateInventory()
+    local startX, startY = 824, 406
+
+    for slotsID, slots in pairs(self.hud.inventory) do
+        slots[-1]:setPosition(846, startY)
+
+        for slotID, slot in pairs(slots) do
+            if slotID > -1 then
+                slot:setPosition(startX, startY)
+
+                startX = startX - 34
+            end
+        end
+
+        startX = 824
+        startY = startY - 34
+    end
 end
 
 function sea.Player:updateHealth(health, maxHealth)
@@ -181,11 +283,35 @@ function sea.Player:updateAmmo(loaded, spare)
     spare = spare or ammo[2]
 
     self.ammoText:setText(loaded)
-    self.ammoSpareText:setText("/ "..spare)
+    self.ammoSpareText:setText("/ "..(spare or "INF"))
 end
 
-function sea.Player:updateCurrentWeapon(currentWeaponName)
-    currentWeaponName = currentWeaponName or self.item.name
+function sea.Player:updateCurrentWeapon(itemType)
+    itemType = itemType or self.item
 
-    self.currentWeaponText:setText(currentWeaponName)
+    if not itemType then
+        return
+    end
+
+    self.currentWeaponText:setText(itemType.name)
+
+    for _, slot in pairs(self:getAllInventorySlots()) do
+        slot:deactivate()
+    end
+
+    self.hud.inventory[itemType.slot][itemType.id]:activate()
+end
+
+function sea.Player:getAllInventorySlots()
+    local s = {}
+
+    for _, slots in pairs(self.hud.inventory) do
+        for slotID, slot in pairs(slots) do
+            if slotID > -1 then
+                table.insert(s, slot)
+            end
+        end
+    end
+
+    return s
 end
