@@ -70,6 +70,10 @@ function Hud:addInventorySlotFor(itemType)
         return
     end
 
+    if itemType.slot == 0 then
+        return
+    end
+
     self.inventory:addSlot(itemType.slot, itemType.id, itemType:getImagePath("kill"))
 end
 

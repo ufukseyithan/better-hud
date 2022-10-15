@@ -1,9 +1,9 @@
 function sea.Player:onItemAdded(itemType)
     if itemType:isArmor() then
         self:updateArmor(itemType:toArmor())
+    else
+        self.hud:addInventorySlotFor(itemType)
     end
-
-    self.hud:addInventorySlotFor(itemType)
 
     self:updateAmmo()
     self:updateCurrentWeapon()
