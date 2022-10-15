@@ -1,5 +1,4 @@
-bh.Bar = dofile("sys/lua/sea-framework/app/better-hud/class/Bar.lua")
-bh.InventorySlot = dofile("sys/lua/sea-framework/app/better-hud/class/InventorySlot.lua")
+local Hud = dofile("sys/lua/sea-framework/app/better-hud/class/Hud.lua")
 
 local count = 0
 for k, v in pairs(sea.itemType) do
@@ -14,66 +13,7 @@ sea.addEvent("onHookJoin", function(player)
         return
     end
 
-    local ui = player.ui
-
-    local armorColor = sea.getColor("armor")
-
-    player.hud = {
-        inventory = {},
-
-        health = {
-            icon = ui:createPanel("<spritesheet:gfx/hud_symbols.bmp:64:64:b>", 20, 444, sea.Style.new({
-                frame = 1,
-                scale = {x = 0.2, y = 0.2}
-            })),
-            text = ui:createText("100", 30, 444, sea.Style.new({
-                verticalAlign = 1,
-                textSize = 10
-            })),
-
-            bar = bh.Bar.new(ui, 10, 466, sea.Color.white, {x = 2, y = 0.5})
-        },
-
-        armor = {
-            icon = ui:createPanel("<spritesheet:gfx/hud_symbols.bmp:64:64:b>", 70, 444, sea.Style.new({
-                frame = 2,
-                scale = {x = 0.2, y = 0.2},
-                color = armorColor
-            })),
-            text = ui:createText("0", 80, 444, sea.Style.new({
-                verticalAlign = 1,
-                color = armorColor,
-                textSize = 10
-            })),
-    
-            bar = bh.Bar.new(ui, 10, 458, armorColor, {x = 2, y = 0.25})
-        },
-
-        ammo = {
-            text = ui:createText("0", 806, 462, sea.Style.new({
-                align = 2,
-                verticalAlign = 1,
-                textSize = 26
-            })),
-            spareText = ui:createText("/ 000", 840, 466, sea.Style.new({
-                align = 2,
-                verticalAlign = 1,
-                opacity = 0.66
-            }))
-        },
-
-        -- Current Weapon
-        currentWeaponText = ui:createText("None", 840, 436, sea.Style.new({
-            align = 2,
-            verticalAlign = 1,
-            textSize = 10,
-            opacity = 0.66
-        })),
-
-        moneyText = ui:createText("$0", 10, 110, sea.Style.new({
-            color = sea.Color.green
-        }))
-    }
+    player.hud = Hud.new(player.ui, sea.Color.white)
 end)
 
 sea.addEvent("onHookSpawn", function(player)
@@ -84,7 +24,7 @@ sea.addEvent("onHookSpawn", function(player)
     -- show hud
 
     local function update()
-        player:refreshInventory()
+        player.hud:refreshInventory(player:getItems())
 
         player:updateHealth()
         player:updateArmor()
@@ -124,10 +64,7 @@ sea.addEvent("onHookDrop", function(player, item, itemType)
     end
 
     local function update()
-        player:removeInventorySlot(itemType)
-
-        player:updateAmmo()
-        player:updateCurrentWeapon()
+        player:onItemRemoved(itemType)
     end
 
     timerEx(1, update)
@@ -140,7 +77,7 @@ sea.addEvent("onHookBuy", function(player, itemType)
 
     local money = player.money
 
-    function update(player)
+    function update()
         if money == player.money then
             -- Buy wasn't processed
             return
@@ -151,7 +88,7 @@ sea.addEvent("onHookBuy", function(player, itemType)
         player:updateMoney()
     end
 
-    timerEx(1, "update", 1, player)
+    timerEx(1, update)
 end)
 
 sea.addEvent("onHookAttack", function(player)

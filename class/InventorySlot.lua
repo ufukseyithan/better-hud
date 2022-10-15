@@ -1,12 +1,14 @@
 local InventorySlot = class()
 
-function InventorySlot:constructor(ui, itemImagePath, x, y, color)
+function InventorySlot:constructor(inventory, imagePath, x, y, color)
+    local ui = inventory.ui
+
     self.slotImage = ui:createPanel("gfx/block.bmp", x, y, sea.Style.new({
         scale = {x = 1, y = 1},
         color = color,
         opacity = 0.25
     }))
-    self.itemImage = ui:createPanel(itemImagePath, x, y)
+    self.itemImage = ui:createPanel(imagePath, x, y)
 end
 
 function InventorySlot:activate()

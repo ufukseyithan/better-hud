@@ -1,5 +1,6 @@
 bh.config = {
-    inventory = false
+    inventory = true,
+    healthAffectsInventoryColor = true --
 }
 
 return {
