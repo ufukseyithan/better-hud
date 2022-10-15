@@ -21,7 +21,6 @@ sea.addEvent("onHookJoin", function(player)
     player.hud = {
         inventory = {},
 
-        -- Health
         health = {
             icon = ui:createPanel("<spritesheet:gfx/hud_symbols.bmp:64:64:b>", 20, 444, sea.Style.new({
                 frame = 1,
@@ -112,8 +111,7 @@ sea.addEvent("onHookCollect", function(player, item, itemType)
         return
     end
 
-    player:updateArmor()
-    player:addInventorySlot(itemType)
+    player:onItemAdded(itemType)
 end)
 
 sea.addEvent("onHookDrop", function(player, item, itemType)
@@ -127,6 +125,7 @@ sea.addEvent("onHookDrop", function(player, item, itemType)
 
     local function update()
         player:removeInventorySlot(itemType)
+
         player:updateAmmo()
         player:updateCurrentWeapon()
     end
@@ -147,15 +146,8 @@ sea.addEvent("onHookBuy", function(player, itemType)
             return
         end
 
-        if itemType:isArmor() then
-            player:updateArmor(itemType:toArmor())
-        end
-
-        player:addInventorySlot(itemType)
-
-        player:updateAmmo()
-        player:updateCurrentWeapon()
-
+        player:onItemAdded(itemType)
+      
         player:updateMoney()
     end
 
@@ -163,10 +155,6 @@ sea.addEvent("onHookBuy", function(player, itemType)
 end)
 
 sea.addEvent("onHookAttack", function(player)
-    if player.bot then
-        return
-    end
-
     if player.bot then
         return
     end
@@ -253,237 +241,3 @@ sea.addEvent("onHookHit", function(player, source, itemType, damage, armorDamage
     player:updateHealth(player.health - damage)
     player:updateArmor(player.armor - armorDamage)
 end)
-
--- Functions
-
-function bh.getHealthBarColor(ratio)
-    if ratio <= 0.3 then 
-        return sea.Color.red
-    elseif ratio < 0.9 then
-        return sea.Color.yellow
-    else
-        return sea.Color.green
-    end
-end
-
--- Extensions
-
-function sea.Player:addInventorySlot(itemType)
-    local slot = itemType.slot
-
-    if itemType.slot == 0 then
-        return
-    end
-
-    local inventory = self.hud.inventory
-
-    local color = bh.getHealthBarColor(self.health / self.maxHealth)
-
-    if not inventory[slot] then
-        inventory[slot] = {}
-
-        inventory[slot][-1] = self.ui:createText(slot, 846, 0, sea.Style.new({
-            align = 1,
-            verticalAlign = 1,
-            textSize = 10,
-            color = color
-        }))
-    end
-
-    if inventory[slot][itemType.id] then
-        return
-    end
-
-    inventory[slot][itemType.id] = bh.InventorySlot.new(self.ui, itemType:getImagePath("kill"), 0, 0, color)
-
-    self:updateInventory()
-end
-
-function sea.Player:removeInventorySlot(itemType)
-    local slot = itemType.slot
-
-    if itemType.slot == 0 then
-        return
-    end
-
-    local inventory = self.hud.inventory
-
-    if not inventory[slot] then
-        return
-    end
-
-    if not inventory[slot][itemType.id] then
-        return
-    end
-
-    inventory[slot][itemType.id]:destroy()
-    inventory[slot][itemType.id] = nil
-
-    if table.count(inventory[slot]) <= 1 then
-        inventory[slot][-1]:destroy()
-        inventory[slot] = nil
-    end
-
-    self:updateInventory()
-end
-
-function sea.Player:updateInventory()
-    local startX, startY = 824, 406
-
-    for slotsID, slots in pairs(self.hud.inventory) do
-        slots[-1]:setPosition(846, startY)
-
-        for slotID, slot in pairs(slots) do
-            if slotID > -1 then
-                slot:setPosition(startX, startY)
-
-                startX = startX - 34
-            end
-        end
-
-        startX = 824
-        startY = startY - 34
-    end
-end
-
-function sea.Player:updateHealth(health, maxHealth)
-    health = health or self.health
-    maxHealth = maxHealth or self.maxHealth
-
-    local ratio = health / maxHealth
-    local color = bh.getHealthBarColor(ratio)
-
-    local hud = self.hud
-    local healthHUD = hud.health
-
-    healthHUD.icon.style.color = color
-    healthHUD.icon:update()
-
-    healthHUD.text:setText(health)
-    healthHUD.text.style.color = color
-    healthHUD.text:update()
-
-    healthHUD.bar:setRatio(ratio)
-    healthHUD.bar:setColor(color)
-
-    local ammoHUD = hud.ammo
-
-    ammoHUD.text.style.color = color
-    ammoHUD.text:update()
-    ammoHUD.spareText.style.color = color
-    ammoHUD.spareText:update()
-
-    local currentWeaponText = hud.currentWeaponText
-
-    currentWeaponText.style.color = color
-    currentWeaponText:update()
-
-    for _, menu in pairs(hud.inventory) do
-        for _, slot in pairs(menu) do
-            if slot.slotImage then -- if it is a inventory slot
-                slot:setColor(color)
-            else 
-                -- it is a text
-                slot.style.color = color
-                slot:update()
-            end
-        end
-    end
-end
-
-function sea.Player:updateArmor(armor, maxArmor)
-    armor = armor or self.armor
-    maxArmor = maxArmor or 100
-
-    local ratio = armor / maxArmor
-
-    if armor > 200 then
-        armor = sea.ItemType.armorToItem(armor).name
-        
-        ratio = 1
-    end
-
-    self.hud.armor.bar:setRatio(ratio)
-
-    self.hud.armor.text:setText(tostring(armor):upper())
-end
-
-function sea.Player:updateAmmo(loaded, spare)
-    local ammo = self:getCurrentAmmo()
-
-    loaded = loaded or ammo[1] or "0"
-    spare = sea.game.infiniteAmmo == "1" and "INF" or (spare or ammo[2] or "0")
-
-    spare = string.format("%03d", spare)
-
-    self.hud.ammo.text:setText(loaded)
-    self.hud.ammo.spareText:setText("/ "..spare)
-end
-
-function sea.Player:updateMoney(money)
-    money = money or self.money
-
-    self.hud.moneyText:setText("$"..money)
-end
-
-function sea.Player:updateCurrentWeapon(itemType)
-    itemType = itemType or self.item
-
-    if not itemType then
-        return
-    end
-
-    self.lastSelectedItem = itemType
-
-    local hud = self.hud
-
-    hud.currentWeaponText:setText(itemType.name)
-
-    for _, slot in pairs(self:getAllInventorySlots()) do
-        slot:deactivate()
-    end
-
-    local menu = hud.inventory[itemType.slot]
-
-    if not menu then
-        return
-    end
-
-    if not menu[itemType.id] then
-        return
-    end
-
-    menu[itemType.id]:activate()
-end
-
-function sea.Player:getAllInventorySlots()
-    local slots = {}
-
-    for _, menu in pairs(self.hud.inventory) do
-        for slotID, slot in pairs(menu) do
-            if slotID > -1 then
-                table.insert(slots, slot)
-            end
-        end
-    end
-
-    return slots
-end
-
-function sea.Player:destroyInventory()
-    for _, menu in pairs(self.hud.inventory) do
-        for _, slot in pairs(menu) do
-            slot:destroy()
-        end
-    end
-
-    self.hud.inventory = {}
-end
-
-function sea.Player:refreshInventory()
-    self:destroyInventory()
-
-    for _, itemType in pairs(self:getItems()) do
-        self:addInventorySlot(itemType)
-    end
-end

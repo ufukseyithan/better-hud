@@ -1,4 +1,6 @@
-bh.config = {}
+bh.config = {
+    inventory = false
+}
 
 return {
     color = {
@@ -13,7 +15,7 @@ return {
 
     server = {
         setting = {
-            hud = 64,
+            hud = 96,
             hudScale = 1
         }
     }

@@ -11,6 +11,8 @@ return {
     },
 
     scripts = {
+        "functions",
+        "extensions/Player",
         "events"
     }
 }
