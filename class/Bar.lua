@@ -3,18 +3,18 @@ local Bar = class()
 function Bar:constructor(ui, x, y, color, scale)
     local imagePath = sea.app.bh.path.gfx.."bar.png"
 
-    self.scale = {x = scale.x or 1, y = scale.y or 1}
+    self.scale = scale and {x = scale.x, y = scale.y} or {x = 1, y = 1} 
 
     local styleProperties = {
         color = color,
-        scale = {x = scale.x or 1, y = scale.y or 1}
+        scale =  scale and {x = scale.x, y = scale.y} or {x = 1, y = 1} 
     }
 
     local style = sea.Style.new(styleProperties)
 
-    local stylePropertiesWtihOpacity = deepcopy(styleProperties)
-    stylePropertiesWtihOpacity.opacity = Bar.opacity
-    local styleWithOpacity = sea.Style.new(stylePropertiesWtihOpacity)
+    local stylePropertiesWithOpacity = deepcopy(styleProperties)
+    stylePropertiesWithOpacity.opacity = Bar.opacity
+    local styleWithOpacity = sea.Style.new(stylePropertiesWithOpacity)
 
     self.background = ui:createPanel(imagePath, x, y, styleWithOpacity)
     self.fill = ui:createPanel(imagePath, x, y, style)
