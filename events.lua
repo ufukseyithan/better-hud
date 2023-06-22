@@ -1,5 +1,3 @@
-local Hud = dofile("sys/lua/sea-framework/app/better-hud/class/Hud.lua")
-
 local count = 0
 for k, v in pairs(sea.itemType) do
 	sea.Item.spawn(v.id, 10 + count, 15)
@@ -13,7 +11,7 @@ sea.addEvent("onHookJoin", function(player)
         return
     end
 
-    player.hud = Hud.new(player.ui, sea.Color.white)
+    player.hud = bh.Hud.new(player.ui, sea.Color.white)
 end)
 
 sea.addEvent("onHookSpawn", function(player)

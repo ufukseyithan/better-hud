@@ -1,7 +1,5 @@
 local Inventory = class()
 
-local Slot = dofile("sys/lua/sea-framework/app/better-hud/class/InventorySlot.lua")
-
 function Inventory:constructor(hud, startX, startY, color)
     self.hud = hud
 
@@ -34,7 +32,7 @@ function Inventory:addSlot(menuIndex, index, imagePath)
         return
     end
 
-    menu[index] = Slot.new(self, imagePath, 0, 0, self.color)
+    menu[index] = bh.InventorySlot.new(self, imagePath, 0, 0, self.color)
 
     self:update()
 end

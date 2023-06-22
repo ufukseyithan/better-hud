@@ -1,8 +1,5 @@
 local Hud = class()
 
-local Inventory = dofile("sys/lua/sea-framework/app/better-hud/class/Inventory.lua")
-local Bar = dofile("sys/lua/sea-framework/app/better-hud/class/Bar.lua")
-
 function Hud:constructor(ui, color)
     self.ui = ui
 
@@ -10,7 +7,7 @@ function Hud:constructor(ui, color)
 
     local armorColor = sea.getColor("armor")
 
-    self.inventory = Inventory.new(self, 824, 406, self.color)
+    self.inventory = bh.Inventory.new(self, 824, 406, self.color)
 
     self.health = {
         icon = ui:createPanel("<spritesheet:gfx/hud_symbols.bmp:64:64:b>", 20, 444, sea.Style.new({
@@ -22,7 +19,7 @@ function Hud:constructor(ui, color)
             textSize = 10
         })),
 
-        bar = Bar.new(ui, 10, 466, sea.Color.white, {x = 2, y = 0.5})
+        bar = bh.Bar.new(ui, 10, 466, sea.Color.white, {x = 2, y = 0.5})
     }
 
     self.armor = {
@@ -37,7 +34,7 @@ function Hud:constructor(ui, color)
             textSize = 10
         })),
 
-        bar = Bar.new(ui, 10, 458, armorColor, {x = 2, y = 0.25})
+        bar = bh.Bar.new(ui, 10, 458, armorColor, {x = 2, y = 0.25})
     }
 
     self.ammo = {
@@ -184,12 +181,12 @@ end
 
 function Hud:updateAmmo(loaded, spare)
     loaded = loaded or "0"
-    spare = sea.game.infiniteAmmo == "1" and "INF" or (spare or "0")
+    spare = sea.game.infiniteAmmo == "1" and "INF" or string.format("%03d", (spare or "0"))
 
     local ammoHUD = self.ammo
 
     ammoHUD.text:setText(loaded)
-    ammoHUD.spareText:setText("/ "..string.format("%03d", spare))
+    ammoHUD.spareText:setText("/ "..spare)
 end
 
 function Hud:updateMoney(money)
